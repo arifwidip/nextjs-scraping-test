@@ -33,6 +33,8 @@ export async function GET(request: NextRequest) {
   let isDev = searchParams.get('isDev') == 'true'
   if (process.env.NODE_ENV == 'development') {
     isDev = true
+  } else if (process.env.NODE_ENV == 'production') {
+    isDev = true
   }
   
   try {
