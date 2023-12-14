@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import DecisionList from "./_components/decisionsList"
+import CasesList from "./_components/casesList"
 
 type TabValue = 'decisions' | 'cases' | null
 
@@ -14,12 +15,14 @@ export default function Home() {
   const fetchDecisions = async () => {
     if (currentTab != 'decisions') {
       setCurrentTab('decisions')
-      setIsDecisionLoading(true)
-      const res = await fetch('/api/putusan')
-      const json = await res.json() as any
-      const data = json.data as DecisionItem[]
-      setDecisionData(data)
-      setIsDecisionLoading(false)
+      if (!decisionData) {
+        setIsDecisionLoading(true)
+        const res = await fetch('/api/putusan')
+        const json = await res.json() as any
+        const data = json.data as DecisionItem[]
+        setDecisionData(data)
+        setIsDecisionLoading(false)
+      }
     }
   }
 
@@ -34,11 +37,11 @@ export default function Home() {
       {/* HEADER */}
       <div className="max-w-[1024px] mx-auto">
         <div className="text-center mb-14">
-          <h1 className="mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl dark:text-white">
-            Courts decision and cases data collection
+          <h1 className="mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl dark:text-white xl:px-10">
+            Data collection of court decisions and cases 
           </h1>
-          <p className="text-lg font-normal text-gray-500 lg:text-xl sm:px-16 xl:px-40 dark:text-gray-400">
-            This is a proof of concept for collecting decisions and cases data from the Courts
+          <p className="text-lg font-normal text-gray-500 lg:text-xl sm:px-16 xl:px-48 dark:text-gray-400">
+            This is a proof of concept to demonstrate scraping decisions and cases data from the courts
           </p>
         </div>
 
@@ -55,9 +58,17 @@ export default function Home() {
                 ])
               }
             >
-              Collect Decisisions data
+              Collect Decisions data
             </button>
-            <button onClick={fetchCases} type="button" className="px-4 py-2 w-52 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-e-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-blue-500 dark:focus:text-white">
+            <button
+              onClick={fetchCases}
+              type="button"
+              className={
+                cn([
+                  'px-4 py-2 w-52 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-e-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-blue-500 dark:focus:text-white',
+                  currentTab == 'cases' && 'bg-blue-700 text-white focus:text-white focus:bg-blue-700'
+                ])
+              }>
               Collect Cases data
             </button>
           </div>
@@ -66,6 +77,7 @@ export default function Home() {
 
       {/* List */}
       { currentTab == 'decisions' && <DecisionList isLoading={isDecisionLoading} items={decisionData} /> }
+      { currentTab == 'cases' && <CasesList /> }
 
     </main>
   )
