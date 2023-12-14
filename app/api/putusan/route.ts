@@ -10,36 +10,28 @@ const exePath =
     ? "/usr/bin/google-chrome"
     : "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
-async function getOptions(isDev: boolean) {
+async function getOptions() {
   let options;
-  if (isDev) {
+  if (process.env.NODE_ENV === "production") {
+    options = {
+      args: chrome.args,
+      executablePath: await chrome.executablePath(),
+      headless: chrome.headless,
+    }
+  } else {
     options = {
       args: [],
       executablePath: exePath,
       headless: true,
-    };
-  } else {
-    options = {
-      args: chrome.args,
-      executablePath: await chrome.executablePath,
-      headless: chrome.headless,
-    };
+    }
   }
   return options;
 }
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams
-  let isDev = searchParams.get('isDev') == 'true'
-  if (process.env.NODE_ENV == 'development') {
-    isDev = true
-  } else if (process.env.NODE_ENV == 'production') {
-    isDev = true
-  }
-  
   try {
     // get options for browser
-    const options = await getOptions(isDev) as PuppeteerLaunchOptions;
+    const options = await getOptions() as PuppeteerLaunchOptions;
 
     // launch a new headless browser with dev / prod options
     const browser = await puppeteer.launch(options);
@@ -92,13 +84,15 @@ export async function GET(request: NextRequest) {
       items.push(item)
     })
 
+    await browser.close()
+
     return Response.json({
       data: items,
     });
 
-  } catch (e) {
+  } catch (e: any) {
     return Response.json({
-      error: e,
+      error: e.message,
     }, {
       status: 500,
     })
