@@ -2,12 +2,14 @@ import Item from "./item"
 
 interface DecisionListProps {
   isLoading: boolean
-  items?: DecisionItem[],
+  count: number
+  items?: DecisionItem[]
 }
 
 export default function DecisionList({
   isLoading,
   items,
+  count,
 }: DecisionListProps) {
   return (
     <div>
@@ -33,6 +35,7 @@ export default function DecisionList({
             </div>
             <div className="mt-2 mb-4 text-sm">
               <p>These data are collected from the &quot;Direktori Putusan&quot; website <a href="https://putusan3.mahkamahagung.go.id/direktori/" target="_blank" className="font-bold">https://putusan3.mahkamahagung.go.id/direktori/</a></p>
+              <p>Currently there are <strong>{count}</strong> data row scrapped from the data source</p>
             </div>
           </div>
 

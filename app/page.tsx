@@ -4,14 +4,6 @@ import SearchForm from "./_components/searchForm";
 import DecisionList from "./_components/decisionsList";
 import { Suspense } from "react";
 
-const itemMapper = (item: any) => {
-  return {
-    ...item,
-    dates: item.dates ? JSON.parse(item.dates) : [],
-    details: item.details ? JSON.parse(item.details) : [],
-  } as DecisionItem;
-};
-
 const Spinner = () => (
   <div className="flex justify-center">
     <svg
@@ -34,7 +26,17 @@ const Spinner = () => (
   </div>
 );
 
+const itemMapper = (item: any) => {
+  return {
+    ...item,
+    dates: item.dates ? JSON.parse(item.dates) : [],
+    details: item.details ? JSON.parse(item.details) : [],
+  } as DecisionItem;
+};
+
 async function getData(searchQuery: string = "") {
+  const count = prisma.item.count()
+
   if (searchQuery) {
     const items = await prisma.item.findMany({
       orderBy: {
@@ -69,13 +71,19 @@ async function getData(searchQuery: string = "") {
         ],
       },
     });
-    return items.map(itemMapper);
+    return {
+      items: items.map(itemMapper),
+      count,
+    }
   } else {
     const items = await prisma.item.findMany({
       take: 21,
     })
 
-    return items.map(itemMapper);
+    return {
+      items: items.map(itemMapper),
+      count,
+    }
   }
 }
 
@@ -104,13 +112,13 @@ export default async function Home({
           <SearchForm />
         </div>
 
-        {data && data.length > 0 && (
+        {data.items && data.items.length > 0 && (
           <Suspense fallback={<Spinner />}>
-            <DecisionList isLoading={false} items={data} />
+            <DecisionList isLoading={false} items={data.items} count={data.count} />
           </Suspense>
         )}
 
-        { data.length === 0 && (
+        { data.items.length === 0 && (
           <div className="font-bold">
             No data found
           </div>
