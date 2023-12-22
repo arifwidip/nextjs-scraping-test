@@ -70,8 +70,13 @@ async function getData(searchQuery: string = "") {
       },
     });
     return items.map(itemMapper);
+  } else {
+    const items = await prisma.item.findMany({
+      take: 21,
+    })
+
+    return items.map(itemMapper);
   }
-  return false;
 }
 
 export default async function Home({
@@ -104,6 +109,12 @@ export default async function Home({
             <DecisionList isLoading={false} items={data} />
           </Suspense>
         )}
+
+        { data.length === 0 && (
+          <div className="font-bold">
+            No data found
+          </div>
+        ) }
       </div>
     </main>
   );
