@@ -35,7 +35,7 @@ const itemMapper = (item: any) => {
 };
 
 async function getData(searchQuery: string = "") {
-  const count = prisma.item.count()
+  const count = await prisma.item.count()
 
   if (searchQuery) {
     const items = await prisma.item.findMany({
