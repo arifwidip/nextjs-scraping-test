@@ -1,36 +1,85 @@
-"use client"
+import { cn } from "@/lib/utils";
+import { prisma } from "@/server/db/client";
+import SearchForm from "./_components/searchForm";
+import DecisionList from "./_components/decisionsList";
+import { Suspense } from "react";
 
-import { cn } from "@/lib/utils"
-import { useState } from "react"
-import DecisionList from "./_components/decisionsList"
-import CasesList from "./_components/casesList"
+const itemMapper = (item: any) => {
+  return {
+    ...item,
+    dates: item.dates ? JSON.parse(item.dates) : [],
+    details: item.details ? JSON.parse(item.details) : [],
+  } as DecisionItem;
+};
 
-type TabValue = 'decisions' | 'cases' | null
+const Spinner = () => (
+  <div className="flex justify-center">
+    <svg
+      aria-hidden="true"
+      className="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
+      viewBox="0 0 100 101"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+        fill="currentColor"
+      />
+      <path
+        d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+        fill="currentFill"
+      />
+    </svg>
+    <span className="sr-only">Loading...</span>
+  </div>
+);
 
-export default function Home() {
-  const [currentTab, setCurrentTab] = useState<TabValue>(null)
-  const [isDecisionLoading, setIsDecisionLoading] = useState(false)
-  const [decisionData, setDecisionData] = useState<DecisionItem[]>(null!)
-
-  const fetchDecisions = async () => {
-    if (currentTab != 'decisions') {
-      setCurrentTab('decisions')
-      if (!decisionData) {
-        setIsDecisionLoading(true)
-        const res = await fetch('/api/putusan')
-        const json = await res.json() as any
-        const data = json.data as DecisionItem[]
-        setDecisionData(data)
-        setIsDecisionLoading(false)
-      }
-    }
+async function getData(searchQuery: string = "") {
+  if (searchQuery) {
+    const items = await prisma.item.findMany({
+      orderBy: {
+        _relevance: {
+          fields: ["title", "abstract"],
+          search: searchQuery,
+          sort: "asc",
+        },
+      },
+      where: {
+        OR: [
+          {
+            title: {
+              search: searchQuery,
+            },
+          },
+          {
+            abstract: {
+              search: searchQuery,
+            },
+          },
+          {
+            dates: {
+              contains: searchQuery,
+            },
+          },
+          {
+            details: {
+              contains: searchQuery,
+            },
+          },
+        ],
+      },
+    });
+    return items.map(itemMapper);
   }
+  return false;
+}
 
-  const fetchCases = async () => {
-    if (currentTab != 'cases') {
-      setCurrentTab('cases')
-    }
-  }
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
+  const data = await getData(searchParams?.search?.toString() ?? "");
 
   return (
     <main className="py-24 px-5 md:px-10 lg:px-24 min-h-screen">
@@ -38,47 +87,24 @@ export default function Home() {
       <div className="max-w-[1024px] mx-auto">
         <div className="text-center mb-14">
           <h1 className="mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl dark:text-white xl:px-10">
-            Data collection of court decisions and cases 
+            Data collection of court decisions and cases
           </h1>
           <p className="text-lg font-normal text-gray-500 lg:text-xl sm:px-16 xl:px-48 dark:text-gray-400">
-            This is a proof of concept to demonstrate scraping decisions and cases data from the courts
+            This is a proof of concept to demonstrate scraping decisions and
+            cases data from the courts
           </p>
         </div>
 
-        {/* Buttons */}
-        <div className="text-center mb-10">
-          <div className="inline-flex rounded-md shadow-sm" role="group">
-            <button
-              onClick={fetchDecisions}
-              type="button"
-              className={
-                cn([
-                  'px-4 py-2 w-52 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-s-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-blue-500 dark:focus:text-white',
-                  currentTab == 'decisions' && 'bg-blue-700 text-white focus:text-white focus:bg-blue-700',
-                ])
-              }
-            >
-              Collect Decisions data
-            </button>
-            <button
-              onClick={fetchCases}
-              type="button"
-              className={
-                cn([
-                  'px-4 py-2 w-52 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-e-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-blue-500 dark:focus:text-white',
-                  currentTab == 'cases' && 'bg-blue-700 text-white focus:text-white focus:bg-blue-700'
-                ])
-              }>
-              Collect Cases data
-            </button>
-          </div>
+        <div className="mb-10">
+          <SearchForm />
         </div>
+
+        {data && data.length > 0 && (
+          <Suspense fallback={<Spinner />}>
+            <DecisionList isLoading={false} items={data} />
+          </Suspense>
+        )}
       </div>
-
-      {/* List */}
-      { currentTab == 'decisions' && <DecisionList isLoading={isDecisionLoading} items={decisionData} /> }
-      { currentTab == 'cases' && <CasesList /> }
-
     </main>
-  )
+  );
 }
