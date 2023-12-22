@@ -68,7 +68,7 @@ export default function SearchForm() {
         </button>
       </div>
       <p className="text-xs mt-2.5 text-gray-500">
-        use double quotes to search exact string, eg. "242/PDT.G/2023/PA.ML"
+        use double quotes to search exact string, eg. &quot;242/PDT.G/2023/PA.ML&quot;
       </p>
     </form>
   );
